@@ -14,3 +14,5 @@ kytusekulu, kogukulu, kulu_per_km = arvuta_auto_kulu(kytuse_hind, kulu_100km, km
 print("Kütusekulu aastas:", kytusekulu, "€")
 print("Kogukulu aastas:", kogukulu, "€")
 print("Kulu kilomeetri kohta:", kulu_per_km, "€")
+
+

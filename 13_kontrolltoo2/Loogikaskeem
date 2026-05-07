@@ -1,0 +1,149 @@
+# Loogikaskeem – AND, OR, NOT lülitused koos ühendamisega
+# Skeem mida testitakse:
+#  A --[NOT1]--+
+#              +--[AND1]--+
+#  B ---------------------+--[OR1]-- väljund
+#  C --[NOT2]--+          |
+#              +--[AND2]--+
+#  D ---------------------+
+#  Väljund = (!A & B) | (!C & D)
+
+
+# baasklass kõigi lülituste jaoks
+
+class Varav:
+    def __init__(self, nimi):
+        self.nimi = nimi
+        self._valjund = None   # (Varav, kanal) tuple
+
+    def yhenda(self, jargmine, kanal):
+        """Ühenda see lülitis teise lülituse sisenditesse."""
+        self._valjund = (jargmine, kanal)
+
+    def signaal(self, kanal, seisund):
+        raise NotImplementedError
+
+    @staticmethod
+    def s(v):
+        return "teadmata" if v is None else str(v).lower()
+
+    def _edasta(self, tulemus):
+        if tulemus is not None and self._valjund:
+            jargmine, kanal = self._valjund
+            jargmine.signaal(kanal, tulemus)
+
+
+# Klass AND, OR ja NOT
+class AND(Varav):
+    def __init__(self, nimi):
+        super().__init__(nimi)
+        self._sisendid = [None, None]
+
+    def signaal(self, kanal, seisund):
+        self._sisendid[kanal - 1] = seisund
+        s1, s2 = self._sisendid
+
+        if s1 is False or s2 is False:
+            t = False
+        elif s1 is True and s2 is True:
+            t = True
+        else:
+            t = None
+
+        print(f"  [{self.nimi:<5} AND]  s1={self.s(s1):<8}  s2={self.s(s2):<8}  =>  {self.s(t)}")
+        self._edasta(t)
+
+class OR(Varav):
+    def __init__(self, nimi):
+        super().__init__(nimi)
+        self._sisendid = [None, None]
+
+    def signaal(self, kanal, seisund):
+        self._sisendid[kanal - 1] = seisund
+        s1, s2 = self._sisendid
+
+        if s1 is True or s2 is True:
+            t = True
+        elif s1 is False and s2 is False:
+            t = False
+        else:
+            t = None
+
+        print(f"  [{self.nimi:<5} OR ]  s1={self.s(s1):<8}  s2={self.s(s2):<8}  =>  {self.s(t)}")
+        self._edasta(t)
+
+class NOT(Varav):
+    def __init__(self, nimi):
+        super().__init__(nimi)
+        self._sisend = None
+
+    def signaal(self, kanal, seisund):
+        self._sisend = seisund
+
+        if self._sisend is True:
+            t = False
+        elif self._sisend is False:
+            t = True
+        else:
+            t = None
+
+        print(f"  [{self.nimi:<5} NOT]  sisend={self.s(self._sisend):<8}           =>  {self.s(t)}")
+        self._edasta(t)
+
+# Testime skeemi erinevate sisendite kombinatsioonidega
+if __name__ == "__main__":
+
+    # Loo lülitused
+    not1 = NOT("NOT1")
+    and1 = AND("AND1")
+    not2 = NOT("NOT2")
+    and2 = AND("AND2")
+    or1  = OR("OR1")
+
+    # Ühenda skeem
+    not1.yhenda(and1, 1)   # NOT1 väljund -> AND1 sisend 1
+    not2.yhenda(and2, 1)   # NOT2 väljund -> AND2 sisend 1
+    and1.yhenda(or1,  1)   # AND1 väljund -> OR1  sisend 1
+    and2.yhenda(or1,  2)   # AND2 väljund -> OR1  sisend 2
+
+#── Test 1: A=false, B=true, C=true, D=true
+    print("=" * 60)
+    print("Test 1 - A=false  B=true  C=true  D=true")
+    print("Oodatav: (!false&true) | (!true&true) = true|false = TRUE")
+    print("-" * 60)
+    not1.signaal(1, False)   # A
+    and1.signaal(2, True)    # B
+    not2.signaal(1, True)    # C
+    and2.signaal(2, True)    # D
+
+    # ── Test 2: A -> True ─────────────────────────────────────────────────────
+    print()
+    print("=" * 60)
+    print("Test 2 - muudame A: false -> true")
+    print("Oodatav: (!true&true) | (!true&true) = false|false = FALSE")
+    print("-" * 60)
+    not1.signaal(1, True)
+
+    # ── Test 3: D -> False ────────────────────────────────────────────────────
+    print()
+    print("=" * 60)
+    print("Test 3 - muudame D: true -> false")
+    print("Oodatav: false|false = FALSE  (tulemust ei muutu)")
+    print("-" * 60)
+    and2.signaal(2, False)
+
+    # ── Test 4: C -> False ────────────────────────────────────────────────────
+    print()
+    print("=" * 60)
+    print("Test 4 - muudame C: true -> false")
+    print("Oodatav: (!true&true)|(!false&false) = false|false = FALSE")
+    print("-" * 60)
+    not2.signaal(1, False)
+
+    # ── Test 5: A -> False ────────────────────────────────────────────────────
+    print()
+    print("=" * 60)
+    print("Test 5 - muudame A: true -> false")
+    print("Oodatav: (!false&true)|(!false&false) = true|false = TRUE")
+    print("-" * 60)
+    not1.signaal(1, False)
